@@ -1,4 +1,5 @@
 #include<avr/io.h>
+#include "okmatrix.h"
 
 /*
   matrix pin connections:
@@ -89,4 +90,6 @@ void setup() {
 }
 
 void loop() {
+  okmatrix::alternate_ok();
+  okmatrix::scroll_ok();
 }
