@@ -1,4 +1,5 @@
 #include<avr/io.h>
+#include "snake.h"
 
 /*
   matrix pin connections:
@@ -86,7 +87,10 @@ void setup() {
   PORTD = B00000000;
   PORTB = B00000000;
   PORTC = B00000000;
+
+  snake::setup();
 }
 
 void loop() {
+  snake::loop();
 }
