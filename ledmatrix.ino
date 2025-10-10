@@ -60,13 +60,21 @@ void paint_col(short col, byte data) {
 
 // display: a global byte array
 byte display[8];
+void paint_display() {
+  for (int i = 0; i < 8; i++) {
+    paint_col(i, display[i]);
+    delay(2);
+  }
+}
 void paint_display(int ms) {
   unsigned long t = millis() + ms;
   while (millis() < t) {
-    for (int i = 0; i < 8; i++) {
-      paint_col(i, display[i]);
-      delay(2);
-    }
+    paint_display();
+  }
+}
+void clear_display() {
+  for (byte c = 0; c < 8; c++) {
+    display[c] = 0x00;
   }
 }
 
