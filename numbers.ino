@@ -1,3 +1,5 @@
+#include "display.h"
+
 namespace numbers {
   byte number[10][3] = {
     {B11111, B10001, B11111}, // 0
@@ -12,17 +14,15 @@ namespace numbers {
     {B11101, B10101, B11111}, // 9
   };
 
-  void set_display(byte x) {
+  void set_display(display::Display* disp, byte x) {
     if (x > 99) x = 99; // no support for >2 digits
 
-    clear_display();
+    display::clear(disp);
     
     // 10s place
     byte tens = (x / 10) % 10;
     byte ones = x % 10;
-    for (byte c = 0; c < 3; c++) {
-      display[c + 4] |= number[tens][2-c];
-      display[c] |= number[ones][2-c];
-    }
+    display::draw_bits(disp, number[tens], 3, 0, 0, 1);
+    display::draw_bits(disp, number[ones], 3, 4, 0, 1<<2);
   }
 }
