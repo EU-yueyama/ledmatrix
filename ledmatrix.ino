@@ -32,6 +32,8 @@ void setup() {
   byte row_pins[] = {8, A2, A3, 5, A5, 6, 10, 11};
   display::set_pins(&lm, col_pins, row_pins);
   display::setup(&lm);
+
+  pinMode(A7, INPUT);
 }
 
 void loop() {

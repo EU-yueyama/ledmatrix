@@ -12,6 +12,7 @@ namespace fishing {
   typedef struct State {
     Phase phase = Phase::CAST;
     byte value = 0; // progress in phase
+    byte line_v = 0; // fishing line state
   };
 
   byte fish[] = {
@@ -22,6 +23,11 @@ namespace fishing {
     B010,
     B111
   };
+
+  void draw_line(State* s, display::Display* d) {
+    byte line = B11111;
+    display::draw_bits(d, &line, 1, s->line_v, 0, 0);
+  }
 
   void tick_cast(State* s, display::Display* disp) {
     s->value ++;
@@ -35,23 +41,34 @@ namespace fishing {
     else if (random(s->value-5) > 1) {
       s->phase = Phase::FISH_APPROACH;
       s->value = 0;
+      s->line_v = 12;
     }
   }
   void tick_fish_approach(State *s, display::Display* disp) {
     s->value ++;
     display::clear(disp);
-    byte line = B11111; display::draw_bits(disp, &line, 1, 2, 0, 0);
+    draw_line(s, disp);
     display::draw_bits(disp, fish, min(6, s->value), 32, 8-s->value, 3);
     if (s->value >= 7) {
       s->phase = Phase::REEL_IN;
       s->value = 0;
     }
   }
-  void tick_reel(State* s, display::Display* disp) {
-    // check reeling direction
-    // value = line tension
+  void tick_reel(State* s, display::Display* d) {
     s->value++;
-    if (s->value >= random(20)) {
+
+    // input -> reel direction
+    if (analogRead(A7) > 600) {
+      s->line_v --; // reel line in
+    } else if (analogRead(A7) < 400) {
+      s->line_v ++;
+    }
+
+    // line logic
+    draw_line(s, d);
+    
+    // maybe change phase
+    if (s->value >= random(20)+10) {
       s->phase = Phase::CAST;
       s->value = 0;
     }
