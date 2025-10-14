@@ -15,7 +15,7 @@ namespace display {
   void set_pins(LEDMatrix* lm, byte* row_pins, byte* col_pins);
   void setup(LEDMatrix* lm);
   void clear(Display* disp);
-  void draw_bits(Display* disp, byte* bits, byte n, byte v, byte c0, byte r0);
+  void draw_bits(Display* disp, byte* bits, byte n, byte v, char c0, char r0);
   void paint(LEDMatrix* lm, Display* disp);
 }
 

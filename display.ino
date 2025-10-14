@@ -52,10 +52,14 @@ namespace display {
 
   // draws display from array of bytes that code a whole column
   // n = number of columns; c0,r0 = offset; v = value
-  void draw_bits(Display* disp, byte* bits, byte n, byte v, byte c0, byte r0) {
-    for (byte c = 0; c < n && c < 8-c0; c++) {
+  void draw_bits(Display* disp, byte* bits, byte n, byte v, char c0, char r0) {
+    // c0, r0 = bottom left (least) corner
+    // -c0/-r0: skip c0 cols / r0 rows 
+    // +c0: draw min(8-c0, n) cols offset by c0
+    // +r0: draw 8-r0 rows offset by r0
+    for (byte c = max(-c0, 0); c < n && c < 8-c0; c++) {
       // decode byte at column
-      for (byte r = 0; r < 8-r0; r++) {
+      for (byte r = max(-r0, 0); r < 8-r0; r++) {
         disp->buf[c+c0][r+r0] = (bits[c] & (1 << r)) ? v : 0;
       }
     }
