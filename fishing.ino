@@ -9,6 +9,7 @@ namespace fishing {
     REEL_IN,
     REEL_OUT,
     LINE_SNAP,
+    FISH_ESCAPE,
     CATCH,
   };
 
@@ -57,7 +58,7 @@ namespace fishing {
     else if (random(s->t-5) > 1) {
       s->phase = Phase::FISH_APPROACH;
       s->t = 0;
-      s->line_v = 12;
+      s->line_v = 7;
     }
   }
   void tick_fish_approach(State *s, display::Display* disp) {
@@ -67,14 +68,15 @@ namespace fishing {
     if (s->t >= 7) {
       s->phase = Phase::REEL_NEUTRAL;
       s->t = 0;
+      s->line_v = 6; // initial line tension
     }
   }
   void tick_reel(State* s, display::Display* d) {
     // input -> reel direction
     if (analogRead(A7) > 600) {
-      s->line_v -= min(s->line_v-1, map(analogRead(A7), 600, 1024, 1, 4));
+      s->line_v -= min(s->line_v, map(analogRead(A7), 600, 1024, 1, 3));
     } else if (analogRead(A7) < 400) {
-      s->line_v += min(16-s->line_v, map(analogRead(A7), 0, 400, 4, 1));
+      s->line_v += min(14-s->line_v, map(analogRead(A7), 0, 400, 3, 1));
     }
 
     // fish movement -> modify line value
@@ -83,12 +85,6 @@ namespace fishing {
       s->line_v ++; break;
     case REEL_OUT:
       s->line_v --; break;
-    }
-    // snap line if value falls too low
-    if (s->line_v <= 1) {
-      s->phase = Phase::LINE_SNAP;
-      s->t = 0;
-      return;
     }
 
     // draw
@@ -105,13 +101,23 @@ namespace fishing {
       display::draw_bits(d, fish_down, 5, 8, 1, 3);
       break;
     }
-    
-    // maybe change phase
-    if (s->t >= random(10)+4) {
+
+    // snap line if line is too tight
+    if (s->line_v <= 0) {
+      s->line_v = 0;
+      s->phase = Phase::LINE_SNAP;
+      s->t = 0;
+    }
+    // fish escapes if line is too loose
+    else if (s->line_v >= 14) {
+      s->line_v = 14;
+      s->phase = Phase::FISH_ESCAPE;
+      s->t = 0;
+    }
+    // maybe change reeling phase
+    else if (s->t >= random(10)+4) {
       // either catch fish, or move to other reel phase
-      switch (random(4)) {
-      case 0:
-        s->phase = Phase::CAST; break;
+      switch (random(1,4)) {
       case 1:
         s->phase = Phase::REEL_NEUTRAL; break;
       case 2:
@@ -133,6 +139,15 @@ namespace fishing {
       s->t = 0;
     }
   }
+  void tick_fish_escape(State *s, display::Display* d) {
+    display::clear(d);
+    draw_line(s, d);
+    display::draw_bits(d, fish_neut, 6, 32, s->t, 3);
+    if (s->t >= 7) {
+      s->phase = Phase::CAST;
+      s->t = 0;
+    }
+  }
   void tick_catch(State* s, display::Display* disp) {
     
   }
@@ -149,6 +164,8 @@ namespace fishing {
       return tick_reel(s, disp);
     case LINE_SNAP:
       return tick_line_snap(s, disp);
+    case FISH_ESCAPE:
+      return tick_fish_escape(s, disp);
     case CATCH:
       return tick_catch(s, disp);
     }
