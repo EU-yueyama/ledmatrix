@@ -1,6 +1,7 @@
 #include<avr/io.h>
 #include "display.h"
 #include "numbers.h"
+#include "fishing.h"
 
 /*
   matrix pin connections:
@@ -34,4 +35,5 @@ void setup() {
 }
 
 void loop() {
+  fishing::loop(&lm, &disp);
 }
