@@ -6,6 +6,7 @@ namespace fishing {
     CAST,
     FISH_APPROACH,
     REEL_IN,
+    LINE_SNAP,
     CATCH,
   };
 
@@ -55,16 +56,33 @@ namespace fishing {
   void tick_reel(State* s, display::Display* d) {
     // input -> reel direction
     if (analogRead(A7) > 600) {
-      s->line_v --; // reel line in
+      s->line_v -= min(s->line_v-1, map(analogRead(A7), 600, 1024, 1, 4));
     } else if (analogRead(A7) < 400) {
-      s->line_v ++;
+      s->line_v += min(16-s->line_v, map(analogRead(A7), 0, 400, 4, 1));
     }
 
     // line logic
     draw_line(s, d);
+    // snap line if value falls too low
+    if (s->line_v <= 1) {
+      s->phase = Phase::LINE_SNAP;
+      s->t = 0;
+      return;
+    }
     
     // maybe change phase
     if (s->t >= random(20)+10) {
+      s->phase = Phase::CAST;
+      s->t = 0;
+    }
+  }
+  void tick_line_snap(State* s, display::Display* d) {
+    display::clear(d);
+    byte line = B11 | (B11100 << s->t);
+    display::draw_bits(d, &line, 1, 8, 0, 0);
+    display::draw_bits(d, fish, 6, 32, 1, 3+s->t);
+
+    if (s->t > 4) {
       s->phase = Phase::CAST;
       s->t = 0;
     }
@@ -81,6 +99,8 @@ namespace fishing {
       return tick_fish_approach(s, disp);
     case REEL_IN:
       return tick_reel(s, disp);
+    case LINE_SNAP:
+      return tick_line_snap(s, disp);
     case CATCH:
       return tick_catch(s, disp);
     }
@@ -92,7 +112,7 @@ namespace fishing {
     while (true) {
       if (millis() >= t) {
         t = millis() + 500;
-        s->t ++;
+        state.t ++;
         tick(&state, disp);
       }
       display::paint(lm, disp);
