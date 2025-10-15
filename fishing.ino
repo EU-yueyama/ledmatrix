@@ -1,3 +1,4 @@
+#include "numbers.h"
 #include "fishing.h"
 
 namespace fishing {
@@ -11,14 +12,16 @@ namespace fishing {
     LINE_SNAP,
     FISH_ESCAPE,
     FISH_CAUGHT,
+    SHOW_SCORE,
   };
 
   typedef struct State {
-    Phase phase = Phase::CAST;
+    Phase phase = Phase::SHOW_SCORE;
     byte t = 0; // progress in phase
     byte line_v = 0; // fishing line state
     byte progress = 0; // how close to catch?
     char fish_v = 0; // how much the fish changes line tension (-2 ~ +2)
+    byte score = 0;
   };
 
   byte fish_neut[] = {
@@ -64,8 +67,6 @@ namespace fishing {
   }
 
   void tick_cast(State* s, display::Display* d) {
-    s->line_v = 16; // initial line tension
-    s->fish_v = 0;
     // animate hook going down
     if (s->t < 6) {
       display::clear(d);
@@ -169,7 +170,8 @@ namespace fishing {
     display::draw_bits(d, fish_neut, 6, 1<<4, 1, 3+1-s->t+s->fish_v);
 
     if (s->t >= 6) {
-      s->phase = Phase::CAST;
+      s->phase = Phase::SHOW_SCORE;
+      s->score = 0;
       s->t = 0;
     }
   }
@@ -178,7 +180,8 @@ namespace fishing {
     draw_line(s, d);
     display::draw_bits(d, fish_neut, 6, 1<<4, s->t, 3+s->fish_v);
     if (s->t >= 7) {
-      s->phase = Phase::CAST;
+      s->phase = Phase::SHOW_SCORE;
+      s->score = 0;
       s->t = 0;
     }
   }
@@ -189,8 +192,23 @@ namespace fishing {
     display::draw_bits(d, fish_neut, 6, 1<<0, 1, 3-1+s->t+s->fish_v);
 
     if (s->t >= 6) {
+      s->phase = Phase::SHOW_SCORE;
+      s->score ++;
+      s->t = 0;
+    }
+  }
+
+  void tick_show_score(State* s, display::Display* d) {
+    if (s->t == 1) {
+      // display score
+      numbers::set_display(d, s->score);
+    }
+    else if (s->t >= 10) {
+      // initialise game
       s->phase = Phase::CAST;
       s->t = 0;
+      s->line_v = 16;
+      s->fish_v = 0;
     }
   }
   
@@ -210,6 +228,8 @@ namespace fishing {
       return tick_fish_escape(s, disp);
     case FISH_CAUGHT:
       return tick_fish_caught(s, disp);
+    case SHOW_SCORE:
+      return tick_show_score(s, disp);
     }
   };
 
