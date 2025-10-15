@@ -66,6 +66,45 @@ namespace fishing {
     draw_line_m(s,d,B11111000);
   }
 
+  enum Fish {
+    NEUT,
+    UP,
+    DOWN,
+  };
+  void draw_fish(State *s, display::Display* d, Fish f, char c0, char r0) {
+    byte* fish; byte n, v, r1;
+    switch (f) {
+    case NEUT:
+      fish = fish_neut;
+      n = 6;
+      r1 = 3;
+      break;
+    case UP:
+      fish = fish_up;
+      n = 5;
+      r1 = 0;
+      break;
+    case DOWN:
+      fish = fish_down;
+      n = 5;
+      r1 = 3;
+      break;
+    }
+    switch (s->phase) {
+    case FISH_APPROACH:
+    case LINE_SNAP:
+    case FISH_ESCAPE:
+      v = 1 << 4; break;
+    case REEL_NEUTRAL:
+    case REEL_IN:
+    case REEL_OUT:
+      v = 1 << 2; break;
+    case FISH_CAUGHT:
+      v = 1 << 0; break;
+    }
+    display::draw_bits(d, fish, n, v, c0+1, r0+r1+s->fish_v);
+  }
+
   void tick_cast(State* s, display::Display* d) {
     // animate hook going down
     if (s->t < 6) {
@@ -81,7 +120,7 @@ namespace fishing {
   void tick_fish_approach(State *s, display::Display* disp) {
     display::clear(disp);
     draw_line(s, disp);
-    display::draw_bits(disp, fish_neut, 6, 1<<4, 8-s->t, 3);
+    draw_fish(s, disp, Fish::NEUT, 7-s->t, 0);
     if (s->t >= 7) {
       s->phase = Phase::REEL_NEUTRAL;
       s->t = 0;
@@ -123,13 +162,13 @@ namespace fishing {
     draw_line(s, d);
     switch (s->phase) {
     case REEL_NEUTRAL:
-      display::draw_bits(d, fish_neut, 6, 1<<2, 1, 3+s->fish_v);
+      draw_fish(s, d, Fish::NEUT, 0, 0);
       break;
     case REEL_IN:
-      display::draw_bits(d, fish_up, 5, 1<<2, 1, 0+s->fish_v);
+      draw_fish(s, d, Fish::UP, 0, 0);
       break;
     case REEL_OUT:
-      display::draw_bits(d, fish_down, 5, 1<<2, 1, 3+s->fish_v);
+      draw_fish(s, d, Fish::DOWN, 0, 0);
       break;
     }
 
@@ -167,7 +206,7 @@ namespace fishing {
   void tick_line_snap(State* s, display::Display* d) {
     display::clear(d);
     draw_line_m(s,d, B11000000 | (B01110000 >> s->t));
-    display::draw_bits(d, fish_neut, 6, 1<<4, 1, 3+1-s->t+s->fish_v);
+    draw_fish(s, d, Fish::NEUT, 0, 1-s->t);
 
     if (s->t >= 6) {
       s->phase = Phase::SHOW_SCORE;
@@ -178,7 +217,7 @@ namespace fishing {
   void tick_fish_escape(State *s, display::Display* d) {
     display::clear(d);
     draw_line(s, d);
-    display::draw_bits(d, fish_neut, 6, 1<<4, s->t, 3+s->fish_v);
+    draw_fish(s, d, Fish::NEUT, s->t, 0);
     if (s->t >= 7) {
       s->phase = Phase::SHOW_SCORE;
       s->score = 0;
@@ -189,7 +228,7 @@ namespace fishing {
   void tick_fish_caught(State* s, display::Display* d) {
     display::clear(d);
     draw_line_m(s,d, B01111100 << s->t);
-    display::draw_bits(d, fish_neut, 6, 1<<0, 1, 3-1+s->t+s->fish_v);
+    draw_fish(s, d, Fish::NEUT, 0, s->t-1);
 
     if (s->t >= 6) {
       s->phase = Phase::SHOW_SCORE;
