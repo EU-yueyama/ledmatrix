@@ -288,7 +288,7 @@ namespace fishing {
     unsigned long t = 0;
     while (true) {
       if (millis() >= t) {
-        t = millis() + 500;
+        t = millis() + 200;
         state.t ++;
         tick(&state, disp);
       }
