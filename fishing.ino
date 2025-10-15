@@ -128,35 +128,40 @@ namespace fishing {
     }
   }
   void tick_reel(State* s, display::Display* d) {
+    char dlv = 0; // track fish+input change to line_v
+    // input -> reel direction
+    if (analogRead(A7) > 600) {
+      // reel in
+      char x = map(analogRead(A7), 600, 1024, 1, 4);
+      dlv -= x;
+      s->progress += x;
+    } else if (analogRead(A7) < 400) {
+      // reel out
+      char x = map(analogRead(A7), 0, 400, 4, 1);
+      dlv += x;
+    }
+    
     // fish movement -> modify line value
-    char dlv = 0;
+    // difficulty -> more likely to move up/down
+    bool move_check = random(s->score*s->score + 10) >= 10;
     switch (s->phase) {
     case REEL_NEUTRAL: // neutral -> return to center
       if (s->fish_v > 0) s->fish_v --;
       if (s->fish_v < 0) s->fish_v ++;
+      // return to middle line_v during neutral
+      if (s->line_v > 16) dlv --;
+      if (s->line_v < 16) dlv ++;
       break;
     case REEL_IN:
-      if (s->fish_v < 0 || random(3-s->fish_v) > 0) s->fish_v ++;
+      if (s->fish_v < 0 || (s->fish_v < 2 && move_check)) s->fish_v ++;
       dlv += max(0, s->fish_v) + 1;
       break;
     case REEL_OUT:
-      if (s->fish_v > 0 || random(3+s->fish_v) > 0) s->fish_v --;
+      if (s->fish_v > 0 || (s->fish_v > -2 && move_check)) s->fish_v --;
       dlv += min(0, s->fish_v) - 1; // fish-v is negative
       break;
     }
-
-    // input -> reel direction
-    if (analogRead(A7) > 600) {
-      // reel in
-      char x = min(s->line_v, map(analogRead(A7), 600, 1024, 1, 3));
-      dlv += x;
-      s->progress += x*2; // 2 steps forward
-    } else if (analogRead(A7) < 400) {
-      // reel out
-      char x = map(analogRead(A7), 0, 400, 3, 1);
-      dlv -= x;
-      s->progress -= min(s->progress, dlv); // 1 step back
-    }
+    
     // constrain line_v range
     dlv = (dlv < 0) ? max(-s->line_v, dlv) : min(32-s->line_v, dlv);
     s->line_v += dlv;
@@ -177,7 +182,8 @@ namespace fishing {
     }
 
     // catch progress
-    if (random(s->progress) > 20) {
+    // difficulty -> require more progress for catch
+    if (s->progress > 10+s->score*s->score*2) {
       s->phase = Phase::FISH_CAUGHT;
       s->t = 0;
     }
@@ -194,7 +200,8 @@ namespace fishing {
       s->t = 0;
     }
     // maybe change reeling phase
-    else if (s->t >= random(10)+4) {
+    // difficulty -> faster to switch
+    else if (random(s->t) > 50/(s->score*s->score+10)) {
       // either catch fish, or move to other reel phase
       switch (random(1,4)) {
       case 1:
