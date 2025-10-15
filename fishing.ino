@@ -1,6 +1,8 @@
 #include "numbers.h"
 #include "fishing.h"
 
+#define fish_target(s) (10+s->score*s->score*2)
+
 namespace fishing {
 
   enum Phase {
@@ -180,10 +182,12 @@ namespace fishing {
       draw_fish(s, d, Fish::DOWN, 0, 0);
       break;
     }
+    byte prog_bar = 0xFF >> (8 - 7*s->progress/fish_target(s));
+    display::draw_bits(d, &prog_bar, 1, 1<<5, 7, 0);
 
     // catch progress
     // difficulty -> require more progress for catch
-    if (s->progress > 10+s->score*s->score*2) {
+    if (s->progress > fish_target(s)) {
       s->phase = Phase::FISH_CAUGHT;
       s->t = 0;
     }
