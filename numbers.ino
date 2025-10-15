@@ -22,7 +22,7 @@ namespace numbers {
     // 10s place
     byte tens = (x / 10) % 10;
     byte ones = x % 10;
-    display::draw_bits(disp, number[tens], 3, 0, 0, 1);
-    display::draw_bits(disp, number[ones], 3, 4, 0, 1<<2);
+    display::draw_bits(disp, number[tens], 3, 2, 0, 0);
+    display::draw_bits(disp, number[ones], 3, 2, 4, 0);
   }
 }
